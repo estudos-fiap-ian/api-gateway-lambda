@@ -60,3 +60,9 @@ variable "cognito_logout_urls" {
   type        = list(string)
   default     = ["http://localhost:3000"]
 }
+
+variable "jwt_secret_key" {
+  description = "JWT secret key for signing tokens"
+  type        = string
+  sensitive   = true
+}

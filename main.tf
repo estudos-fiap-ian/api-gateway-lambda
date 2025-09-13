@@ -52,6 +52,7 @@ module "lambda_register" {
   cognito_user_pool_id  = module.cognito.user_pool_id
   cognito_user_pool_arn = module.cognito.user_pool_arn
   cognito_client_id     = module.cognito.user_pool_client_id
+  jwt_secret_key        = var.jwt_secret_key
   source_dir            = "auth"
   source_file           = "register"
 }
@@ -67,6 +68,7 @@ module "lambda_login" {
   cognito_user_pool_id  = module.cognito.user_pool_id
   cognito_user_pool_arn = module.cognito.user_pool_arn
   cognito_client_id     = module.cognito.user_pool_client_id
+  jwt_secret_key        = var.jwt_secret_key
   source_dir            = "auth"
   source_file           = "login"
 }

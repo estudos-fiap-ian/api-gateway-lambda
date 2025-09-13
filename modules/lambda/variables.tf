@@ -53,3 +53,9 @@ variable "source_file" {
   description = "Source file name for Lambda function"
   type        = string
 }
+
+variable "jwt_secret_key" {
+  description = "JWT secret key for signing tokens"
+  type        = string
+  sensitive   = true
+}
