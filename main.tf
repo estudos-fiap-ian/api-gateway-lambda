@@ -97,10 +97,10 @@ module "api_gateway" {
   log_retention_days = var.log_retention_days
 
   # Auth endpoints
-  register_lambda_invoke_arn    = module.lambda_register.lambda_invoke_arn
-  register_lambda_function_name = module.lambda_register.lambda_function_name
-  login_lambda_invoke_arn       = module.lambda_login.lambda_invoke_arn
-  login_lambda_function_name    = module.lambda_login.lambda_function_name
+  register_lambda_invoke_arn     = module.lambda_register.lambda_invoke_arn
+  register_lambda_function_name  = module.lambda_register.lambda_function_name
+  login_lambda_invoke_arn        = module.lambda_login.lambda_invoke_arn
+  login_lambda_function_name     = module.lambda_login.lambda_function_name
   anonymous_lambda_invoke_arn    = module.lambda_anonymous.lambda_invoke_arn
   anonymous_lambda_function_name = module.lambda_anonymous.lambda_function_name
 }
