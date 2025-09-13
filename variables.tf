@@ -4,11 +4,6 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "function_name" {
-  description = "Name of the Lambda function"
-  type        = string
-  default     = "HelloWorld"
-}
 
 variable "runtime" {
   description = "Lambda runtime"
@@ -16,11 +11,6 @@ variable "runtime" {
   default     = "nodejs20.x"
 }
 
-variable "handler" {
-  description = "Lambda handler"
-  type        = string
-  default     = "hello.handler"
-}
 
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"
@@ -46,8 +36,27 @@ variable "stage_name" {
   default     = "serverless_lambda_stage"
 }
 
-variable "route_key" {
-  description = "Route key for the API Gateway route"
+
+variable "environment" {
+  description = "Environment name"
   type        = string
-  default     = "GET /hello"
+  default     = "dev"
+}
+
+variable "cognito_user_pool_name" {
+  description = "Name of the Cognito User Pool"
+  type        = string
+  default     = "lambda-api-user-pool"
+}
+
+variable "cognito_callback_urls" {
+  description = "List of allowed callback URLs for the User Pool Client"
+  type        = list(string)
+  default     = ["http://localhost:3000"]
+}
+
+variable "cognito_logout_urls" {
+  description = "List of allowed logout URLs for the User Pool Client"
+  type        = list(string)
+  default     = ["http://localhost:3000"]
 }

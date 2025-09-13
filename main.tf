@@ -31,23 +31,56 @@ provider "aws" {
   }
 }
 
-module "lambda" {
+module "cognito" {
+  source = "./modules/cognito"
+
+  user_pool_name = var.cognito_user_pool_name
+  environment    = var.environment
+  callback_urls  = var.cognito_callback_urls
+  logout_urls    = var.cognito_logout_urls
+}
+
+
+module "lambda_register" {
   source = "./modules/lambda"
 
-  function_name      = var.function_name
-  runtime            = var.runtime
-  handler            = var.handler
-  log_retention_days = var.log_retention_days
-  lambda_role_name   = var.lambda_role_name
+  function_name         = "RegisterUser"
+  runtime               = var.runtime
+  handler               = "register.handler"
+  log_retention_days    = var.log_retention_days
+  lambda_role_name      = var.lambda_role_name
+  cognito_user_pool_id  = module.cognito.user_pool_id
+  cognito_user_pool_arn = module.cognito.user_pool_arn
+  cognito_client_id     = module.cognito.user_pool_client_id
+  source_dir            = "auth"
+  source_file           = "register"
+}
+
+module "lambda_login" {
+  source = "./modules/lambda"
+
+  function_name         = "LoginUser"
+  runtime               = var.runtime
+  handler               = "login.handler"
+  log_retention_days    = var.log_retention_days
+  lambda_role_name      = var.lambda_role_name
+  cognito_user_pool_id  = module.cognito.user_pool_id
+  cognito_user_pool_arn = module.cognito.user_pool_arn
+  cognito_client_id     = module.cognito.user_pool_client_id
+  source_dir            = "auth"
+  source_file           = "login"
 }
 
 module "api_gateway" {
   source = "./modules/api-gateway"
 
-  api_name             = var.api_name
-  stage_name           = var.stage_name
-  route_key            = var.route_key
-  log_retention_days   = var.log_retention_days
-  lambda_invoke_arn    = module.lambda.lambda_invoke_arn
-  lambda_function_name = module.lambda.lambda_function_name
+  api_name           = var.api_name
+  stage_name         = var.stage_name
+  log_retention_days = var.log_retention_days
+
+  # Auth endpoints
+  register_lambda_invoke_arn    = module.lambda_register.lambda_invoke_arn
+  register_lambda_function_name = module.lambda_register.lambda_function_name
+  login_lambda_invoke_arn       = module.lambda_login.lambda_invoke_arn
+  login_lambda_function_name    = module.lambda_login.lambda_function_name
 }

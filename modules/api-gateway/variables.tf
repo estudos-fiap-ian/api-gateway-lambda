@@ -10,11 +10,6 @@ variable "stage_name" {
   default     = "serverless_lambda_stage"
 }
 
-variable "route_key" {
-  description = "Route key for the API Gateway route"
-  type        = string
-  default     = "GET /hello"
-}
 
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"
@@ -22,12 +17,24 @@ variable "log_retention_days" {
   default     = 30
 }
 
-variable "lambda_invoke_arn" {
-  description = "ARN to invoke the Lambda function"
+
+
+variable "register_lambda_invoke_arn" {
+  description = "ARN to invoke the Register Lambda function"
   type        = string
 }
 
-variable "lambda_function_name" {
-  description = "Name of the Lambda function"
+variable "register_lambda_function_name" {
+  description = "Name of the Register Lambda function"
+  type        = string
+}
+
+variable "login_lambda_invoke_arn" {
+  description = "ARN to invoke the Login Lambda function"
+  type        = string
+}
+
+variable "login_lambda_function_name" {
+  description = "Name of the Login Lambda function"
   type        = string
 }

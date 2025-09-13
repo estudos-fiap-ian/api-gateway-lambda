@@ -1,7 +1,6 @@
 variable "function_name" {
   description = "Name of the Lambda function"
   type        = string
-  default     = "HelloWorld"
 }
 
 variable "runtime" {
@@ -13,7 +12,6 @@ variable "runtime" {
 variable "handler" {
   description = "Lambda handler"
   type        = string
-  default     = "hello.handler"
 }
 
 variable "log_retention_days" {
@@ -26,4 +24,32 @@ variable "lambda_role_name" {
   description = "IAM role name for Lambda execution"
   type        = string
   default     = "LabRole"
+}
+
+variable "cognito_user_pool_id" {
+  description = "Cognito User Pool ID"
+  type        = string
+  default     = ""
+}
+
+variable "cognito_user_pool_arn" {
+  description = "Cognito User Pool ARN"
+  type        = string
+  default     = ""
+}
+
+variable "cognito_client_id" {
+  description = "Cognito User Pool Client ID"
+  type        = string
+  default     = ""
+}
+
+variable "source_dir" {
+  description = "Source directory for Lambda function"
+  type        = string
+}
+
+variable "source_file" {
+  description = "Source file name for Lambda function"
+  type        = string
 }
