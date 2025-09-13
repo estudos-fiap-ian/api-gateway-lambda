@@ -68,6 +68,22 @@ resource "aws_apigatewayv2_route" "login" {
   target    = "integrations/${aws_apigatewayv2_integration.login.id}"
 }
 
+# Anonymous endpoint
+resource "aws_apigatewayv2_integration" "anonymous" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  integration_uri    = var.anonymous_lambda_invoke_arn
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+}
+
+resource "aws_apigatewayv2_route" "anonymous" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  route_key = "GET /anonymous"
+  target    = "integrations/${aws_apigatewayv2_integration.anonymous.id}"
+}
+
 
 resource "aws_lambda_permission" "api_gw_register" {
   statement_id  = "AllowExecutionFromAPIGatewayRegister"
@@ -82,6 +98,15 @@ resource "aws_lambda_permission" "api_gw_login" {
   statement_id  = "AllowExecutionFromAPIGatewayLogin"
   action        = "lambda:InvokeFunction"
   function_name = var.login_lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "api_gw_anonymous" {
+  statement_id  = "AllowExecutionFromAPIGatewayAnonymous"
+  action        = "lambda:InvokeFunction"
+  function_name = var.anonymous_lambda_function_name
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"

@@ -38,3 +38,13 @@ variable "login_lambda_function_name" {
   description = "Name of the Login Lambda function"
   type        = string
 }
+
+variable "anonymous_lambda_invoke_arn" {
+  description = "ARN to invoke the Anonymous Login Lambda function"
+  type        = string
+}
+
+variable "anonymous_lambda_function_name" {
+  description = "Name of the Anonymous Login Lambda function"
+  type        = string
+}
