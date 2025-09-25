@@ -113,11 +113,10 @@ resource "aws_lambda_permission" "api_gw_anonymous" {
 }
 
 # VPC Link for connecting to EKS via NLB
-resource "aws_apigatewayv2_vpc_link" "golang_api_vpc_link" {
-  name               = "golang-api-vpc-link"
-  target_arns        = [var.nlb_arn]
-  security_group_ids = []
-  subnet_ids         = []
+# For HTTP API (v2), we use aws_api_gateway_vpc_link (v1 resource) which is compatible
+resource "aws_api_gateway_vpc_link" "golang_api_vpc_link" {
+  name        = "golang-api-vpc-link"
+  target_arns = [var.nlb_arn]
 
   tags = {
     Name = "golang-api-vpc-link"
@@ -130,9 +129,9 @@ resource "aws_apigatewayv2_integration" "golang_api" {
 
   integration_type   = "HTTP_PROXY"
   integration_method = "ANY"
-  integration_uri    = "http://internal-load-balancer"
+  integration_uri    = "http://nlb.internal"  # Placeholder URI, actual routing handled by VPC Link
   connection_type    = "VPC_LINK"
-  connection_id      = aws_apigatewayv2_vpc_link.golang_api_vpc_link.id
+  connection_id      = aws_api_gateway_vpc_link.golang_api_vpc_link.id
 
   request_parameters = {
     "overwrite:path" = "$request.path"
