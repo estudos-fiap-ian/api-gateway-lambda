@@ -110,15 +110,47 @@ jobs:
         echo "Terraform Plan failed!"
         exit 1
 
-    - name: Get NLB ARN from terraform-infra
+    - name: Get NLB ARN from terraform-infra remote state
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       id: get_nlb_arn
       run: |
-        # Initialize terraform-infra to access remote state
-        cd ../terraform-infra
+        # Use AWS CLI to get NLB ARN from the terraform-infra S3 backend
+        # The NLB ARN is stored in the terraform state
+
+        # Initialize a temporary terraform configuration to read remote state
+        mkdir -p /tmp/terraform-infra-reader
+        cd /tmp/terraform-infra-reader
+
+        cat > main.tf << 'EOF'
+        terraform {
+          backend "s3" {
+            bucket = "bucket-s3-ian-fiap"
+            key    = "terraform.tfstate"
+            region = "us-east-1"
+          }
+        }
+
+        data "terraform_remote_state" "infra" {
+          backend = "s3"
+          config = {
+            bucket = "bucket-s3-ian-fiap"
+            key    = "terraform.tfstate"
+            region = "us-east-1"
+          }
+        }
+
+        output "nlb_arn" {
+          value = data.terraform_remote_state.infra.outputs.nlb_arn
+        }
+        EOF
+
         terraform init
-        echo "nlb_arn=$(terraform output -raw nlb_arn)" >> $GITHUB_OUTPUT
-        cd ../serverless
+        NLB_ARN=$(terraform output -raw nlb_arn)
+        echo "nlb_arn=$NLB_ARN" >> $GITHUB_OUTPUT
+
+        # Cleanup
+        cd /
+        rm -rf /tmp/terraform-infra-reader
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
