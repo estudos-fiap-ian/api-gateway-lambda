@@ -106,4 +106,5 @@ module "api_gateway" {
 
   # NLB for VPC Link to EKS
   nlb_arn = var.nlb_arn
+  nlb_listener_arn = var.nlb_listener_arn
 }

@@ -142,11 +142,17 @@ jobs:
         output "nlb_arn" {
           value = data.terraform_remote_state.infra.outputs.nlb_arn
         }
+
+        output "nlb_listener_arn" {
+          value = data.terraform_remote_state.infra.outputs.nlb_listener_arn
+        }
         EOF
 
         terraform init
         NLB_ARN=$(terraform output -raw nlb_arn)
+        NLB_LISTENER_ARN=$(terraform output -raw nlb_listener_arn)
         echo "nlb_arn=$NLB_ARN" >> $GITHUB_OUTPUT
+        echo "nlb_listener_arn=$NLB_LISTENER_ARN" >> $GITHUB_OUTPUT
 
         # Cleanup
         cd /
@@ -157,7 +163,8 @@ jobs:
       run: |
         terraform apply -auto-approve -input=false \
           -var="jwt_secret_key=${{ secrets.JWT_SECRET_KEY }}" \
-          -var="nlb_arn=${{ steps.get_nlb_arn.outputs.nlb_arn }}"
+          -var="nlb_arn=${{ steps.get_nlb_arn.outputs.nlb_arn }}" \
+          -var="nlb_listener_arn=${{ steps.get_nlb_arn.outputs.nlb_listener_arn }}"
 
     - name: Output API Gateway URL
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'

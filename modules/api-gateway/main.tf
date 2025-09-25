@@ -129,7 +129,7 @@ resource "aws_apigatewayv2_integration" "golang_api" {
 
   integration_type   = "HTTP_PROXY"
   integration_method = "ANY"
-  integration_uri    = "http://nlb.internal"  # Placeholder URI, actual routing handled by VPC Link
+  integration_uri    = var.nlb_listener_arn  # Use NLB listener ARN for API Gateway v2
   connection_type    = "VPC_LINK"
   connection_id      = aws_api_gateway_vpc_link.golang_api_vpc_link.id
 
