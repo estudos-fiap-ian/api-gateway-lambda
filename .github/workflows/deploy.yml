@@ -110,9 +110,22 @@ jobs:
         echo "Terraform Plan failed!"
         exit 1
 
+    - name: Get NLB ARN from terraform-infra
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      id: get_nlb_arn
+      run: |
+        # Initialize terraform-infra to access remote state
+        cd ../terraform-infra
+        terraform init
+        echo "nlb_arn=$(terraform output -raw nlb_arn)" >> $GITHUB_OUTPUT
+        cd ../serverless
+
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: terraform apply -auto-approve -input=false -var="jwt_secret_key=${{ secrets.JWT_SECRET_KEY }}"
+      run: |
+        terraform apply -auto-approve -input=false \
+          -var="jwt_secret_key=${{ secrets.JWT_SECRET_KEY }}" \
+          -var="nlb_arn=${{ steps.get_nlb_arn.outputs.nlb_arn }}"
 
     - name: Output API Gateway URL
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
