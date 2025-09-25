@@ -103,4 +103,7 @@ module "api_gateway" {
   login_lambda_function_name     = module.lambda_login.lambda_function_name
   anonymous_lambda_invoke_arn    = module.lambda_anonymous.lambda_invoke_arn
   anonymous_lambda_function_name = module.lambda_anonymous.lambda_function_name
+
+  # NLB for VPC Link to EKS
+  nlb_arn = var.nlb_arn
 }

@@ -111,3 +111,66 @@ resource "aws_lambda_permission" "api_gw_anonymous" {
 
   source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
 }
+
+# VPC Link for connecting to EKS via NLB
+resource "aws_apigatewayv2_vpc_link" "golang_api_vpc_link" {
+  name               = "golang-api-vpc-link"
+  target_arns        = [var.nlb_arn]
+  security_group_ids = []
+  subnet_ids         = []
+
+  tags = {
+    Name = "golang-api-vpc-link"
+  }
+}
+
+# Integration for Golang API routes via VPC Link
+resource "aws_apigatewayv2_integration" "golang_api" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  integration_type   = "HTTP_PROXY"
+  integration_method = "ANY"
+  integration_uri    = "http://internal-load-balancer"
+  connection_type    = "VPC_LINK"
+  connection_id      = aws_apigatewayv2_vpc_link.golang_api_vpc_link.id
+
+  request_parameters = {
+    "overwrite:path" = "$request.path"
+  }
+}
+
+# Routes for Golang API endpoints
+resource "aws_apigatewayv2_route" "golang_api_products" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  route_key = "ANY /products"
+  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
+}
+
+resource "aws_apigatewayv2_route" "golang_api_products_id" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  route_key = "ANY /products/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
+}
+
+resource "aws_apigatewayv2_route" "golang_api_orders" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  route_key = "ANY /orders"
+  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
+}
+
+resource "aws_apigatewayv2_route" "golang_api_orders_id" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  route_key = "ANY /orders/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
+}
+
+resource "aws_apigatewayv2_route" "golang_api_health" {
+  api_id = aws_apigatewayv2_api.lambda.id
+
+  route_key = "GET /health"
+  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
+}

@@ -66,3 +66,8 @@ variable "jwt_secret_key" {
   type        = string
   sensitive   = true
 }
+
+variable "nlb_arn" {
+  description = "ARN of the Network Load Balancer from terraform-infra"
+  type        = string
+}

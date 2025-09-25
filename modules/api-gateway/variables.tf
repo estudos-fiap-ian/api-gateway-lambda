@@ -48,3 +48,8 @@ variable "anonymous_lambda_function_name" {
   description = "Name of the Anonymous Login Lambda function"
   type        = string
 }
+
+variable "nlb_arn" {
+  description = "ARN of the Network Load Balancer for VPC Link"
+  type        = string
+}
