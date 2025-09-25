@@ -112,26 +112,31 @@ resource "aws_lambda_permission" "api_gw_anonymous" {
   source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
 }
 
-# VPC Link for connecting to EKS via NLB
-# For HTTP API (v2), we use aws_api_gateway_vpc_link (v1 resource) which is compatible
-resource "aws_api_gateway_vpc_link" "golang_api_vpc_link" {
-  name        = "golang-api-vpc-link"
-  target_arns = [var.nlb_arn]
+# Get VPC and subnet information for VPC Link V2
+data "aws_lb" "nlb" {
+  arn = var.nlb_arn
+}
+
+# VPC Link V2 for connecting to EKS via NLB (required for HTTP API)
+resource "aws_apigatewayv2_vpc_link" "golang_api_vpc_link" {
+  name               = "golang-api-vpc-link"
+  security_group_ids = []
+  subnet_ids         = data.aws_lb.nlb.subnets
 
   tags = {
     Name = "golang-api-vpc-link"
   }
 }
 
-# Integration for Golang API routes via VPC Link
+# Integration for Golang API routes via VPC Link V2
 resource "aws_apigatewayv2_integration" "golang_api" {
   api_id = aws_apigatewayv2_api.lambda.id
 
   integration_type   = "HTTP_PROXY"
   integration_method = "ANY"
-  integration_uri    = var.nlb_listener_arn  # Use NLB listener ARN for API Gateway v2
+  integration_uri    = "http://${data.aws_lb.nlb.dns_name}"  # Use actual NLB DNS name
   connection_type    = "VPC_LINK"
-  connection_id      = aws_api_gateway_vpc_link.golang_api_vpc_link.id
+  connection_id      = aws_apigatewayv2_vpc_link.golang_api_vpc_link.id
 
   request_parameters = {
     "overwrite:path" = "$request.path"
