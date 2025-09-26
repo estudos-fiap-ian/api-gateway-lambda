@@ -48,7 +48,7 @@ resource "aws_apigatewayv2_integration" "register" {
 resource "aws_apigatewayv2_route" "register" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  route_key = "POST /register"
+  route_key = "POST /auth/register"
   target    = "integrations/${aws_apigatewayv2_integration.register.id}"
 }
 
@@ -64,7 +64,7 @@ resource "aws_apigatewayv2_integration" "login" {
 resource "aws_apigatewayv2_route" "login" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  route_key = "POST /login"
+  route_key = "POST /auth/login"
   target    = "integrations/${aws_apigatewayv2_integration.login.id}"
 }
 
@@ -80,7 +80,7 @@ resource "aws_apigatewayv2_integration" "anonymous" {
 resource "aws_apigatewayv2_route" "anonymous" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  route_key = "GET /anonymous"
+  route_key = "GET /auth/anonymous"
   target    = "integrations/${aws_apigatewayv2_integration.anonymous.id}"
 }
 
@@ -143,38 +143,11 @@ resource "aws_apigatewayv2_integration" "golang_api" {
   }
 }
 
-# Routes for Golang API endpoints
-resource "aws_apigatewayv2_route" "golang_api_products" {
+# Catch-all route for ALL Golang API endpoints
+# This forwards any route NOT handled by Lambda functions to the Golang API
+resource "aws_apigatewayv2_route" "golang_api_catch_all" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  route_key = "ANY /products"
-  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
-}
-
-resource "aws_apigatewayv2_route" "golang_api_products_id" {
-  api_id = aws_apigatewayv2_api.lambda.id
-
-  route_key = "ANY /products/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
-}
-
-resource "aws_apigatewayv2_route" "golang_api_orders" {
-  api_id = aws_apigatewayv2_api.lambda.id
-
-  route_key = "ANY /orders"
-  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
-}
-
-resource "aws_apigatewayv2_route" "golang_api_orders_id" {
-  api_id = aws_apigatewayv2_api.lambda.id
-
-  route_key = "ANY /orders/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
-}
-
-resource "aws_apigatewayv2_route" "golang_api_health" {
-  api_id = aws_apigatewayv2_api.lambda.id
-
-  route_key = "GET /health"
+  route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.golang_api.id}"
 }
