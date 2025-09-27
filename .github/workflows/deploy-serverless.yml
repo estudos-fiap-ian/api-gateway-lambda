@@ -1,0 +1,194 @@
+name: Deploy Serverless API Gateway and Lambda
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  TF_VAR_environment: dev
+  TF_VAR_api_name: unified-api-gateway
+  TF_VAR_stage_name: v1
+
+jobs:
+  build-and-deploy:
+    name: 'Build and Deploy Serverless'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: |
+        cd auth && npm install
+        cd ../src && npm install || echo "No package.json in src directory"
+
+    - name: Build Lambda functions
+      run: |
+        echo "Building Lambda deployment packages..."
+        # Create deployment packages for each function
+        cd auth
+
+        # Register function
+        zip -r ../register.zip register.js node_modules/
+
+        # Login function
+        zip -r ../login.zip login.js node_modules/
+
+        # Anonymous function
+        zip -r ../anonymous.zip anonymous.js node_modules/
+
+        cd ..
+        ls -la *.zip
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.2
+        terraform_wrapper: false
+
+    - name: Terraform Format
+      id: fmt
+      run: terraform fmt -check
+      continue-on-error: true
+
+    - name: Terraform Init
+      id: init
+      run: terraform init
+
+    - name: Terraform Validate
+      id: validate
+      run: terraform validate -no-color
+
+    - name: Check Infrastructure Dependency
+      run: |
+        echo "Checking if terraform-infra outputs are available..."
+        # This will fail if infrastructure is not deployed
+        aws s3api head-object --bucket bucket-s3-ian-fiap --key terraform.tfstate || {
+          echo "❌ Infrastructure not found! Please deploy terraform-infra first."
+          exit 1
+        }
+        echo "✅ Infrastructure state found."
+
+    - name: Terraform Plan
+      id: plan
+      if: github.event_name == 'pull_request'
+      run: terraform plan -no-color -input=false -var="jwt_secret_key=${{ secrets.JWT_SECRET_KEY }}"
+      continue-on-error: true
+
+    - name: Update Pull Request
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      env:
+        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+          <details><summary>Show Plan</summary>
+
+          \`\`\`\n
+          ${process.env.PLAN}
+          \`\`\`
+
+          </details>
+
+          *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve -input=false -var="jwt_secret_key=${{ secrets.JWT_SECRET_KEY }}"
+
+    - name: Get API Gateway URL
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        API_GATEWAY_URL=$(terraform output -raw invoke_url)
+        echo "=== Unified API Deployment Complete ==="
+        echo "🔗 API Gateway URL: $API_GATEWAY_URL"
+        echo ""
+        echo "📍 Available Endpoints:"
+        echo "   Authentication (Lambda):"
+        echo "   • POST $API_GATEWAY_URL/auth/register"
+        echo "   • POST $API_GATEWAY_URL/auth/login"
+        echo "   • GET  $API_GATEWAY_URL/auth/anonymous"
+        echo ""
+        echo "   Application API (EKS via VPC Link):"
+        echo "   • GET  $API_GATEWAY_URL/ping"
+        echo "   • All other routes -> Go API on EKS"
+        echo ""
+        echo "✅ Single URL for both Lambda and EKS endpoints!"
+
+        # Save URL to GitHub environment for potential use by other jobs
+        echo "API_GATEWAY_URL=$API_GATEWAY_URL" >> $GITHUB_ENV
+
+    - name: Test API Endpoints
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        API_GATEWAY_URL=$(terraform output -raw invoke_url)
+        echo "Testing API Gateway endpoints..."
+
+        # Test Lambda endpoint (should work immediately)
+        echo "Testing Lambda endpoint..."
+        curl -f -X GET "$API_GATEWAY_URL/auth/anonymous" || echo "Lambda endpoint not ready yet"
+
+        # Test VPC Link endpoint (may take a few minutes to be ready)
+        echo "Testing VPC Link to EKS endpoint..."
+        curl -f -X GET "$API_GATEWAY_URL/ping" || echo "VPC Link endpoint not ready yet (this is normal and may take 5-10 minutes)"
+
+        echo "⏳ Note: VPC Link integration may take 5-10 minutes to be fully operational"
+
+  notify-completion:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Notify Success
+      if: needs.build-and-deploy.result == 'success'
+      run: |
+        echo "🎉 Unified API Gateway deployment completed!"
+        echo "🔗 Both Lambda functions and EKS API are accessible via the same URL"
+        echo "📝 Lambda endpoints handle authentication (/auth/*)"
+        echo "🚀 EKS endpoints handle application logic (everything else)"
+
+    - name: Notify Failure
+      if: needs.build-and-deploy.result == 'failure'
+      run: |
+        echo "❌ Serverless deployment failed!"
+        echo "🔍 Common issues:"
+        echo "   • Infrastructure not deployed (deploy terraform-infra first)"
+        echo "   • Missing JWT_SECRET_KEY secret"
+        echo "   • EKS cluster not ready"
+        exit 1

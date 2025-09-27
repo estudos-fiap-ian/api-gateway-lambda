@@ -58,3 +58,18 @@ variable "nlb_listener_arn" {
   description = "ARN of the NLB listener for API Gateway integration"
   type        = string
 }
+
+variable "vpc_id" {
+  description = "VPC ID for VPC Link"
+  type        = string
+}
+
+variable "private_subnet_ids" {
+  description = "Private subnet IDs for VPC Link"
+  type        = list(string)
+}
+
+variable "vpc_link_security_group_id" {
+  description = "Security Group ID for VPC Link"
+  type        = string
+}

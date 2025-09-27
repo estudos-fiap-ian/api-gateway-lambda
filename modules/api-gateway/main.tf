@@ -120,8 +120,8 @@ data "aws_lb" "nlb" {
 # VPC Link V2 for connecting to EKS via NLB (required for HTTP API)
 resource "aws_apigatewayv2_vpc_link" "golang_api_vpc_link" {
   name               = "golang-api-vpc-link"
-  security_group_ids = []
-  subnet_ids         = data.aws_lb.nlb.subnets
+  security_group_ids = [var.vpc_link_security_group_id]
+  subnet_ids         = var.private_subnet_ids
 
   tags = {
     Name = "golang-api-vpc-link"

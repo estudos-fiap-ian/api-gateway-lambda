@@ -67,12 +67,4 @@ variable "jwt_secret_key" {
   sensitive   = true
 }
 
-variable "nlb_arn" {
-  description = "ARN of the Network Load Balancer from terraform-infra"
-  type        = string
-}
-
-variable "nlb_listener_arn" {
-  description = "ARN of the NLB listener for API Gateway integration"
-  type        = string
-}
+# NLB variables removed - now using data source from terraform-infra
