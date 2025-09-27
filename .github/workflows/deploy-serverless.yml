@@ -134,7 +134,7 @@ jobs:
     - name: Get API Gateway URL
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
-        API_GATEWAY_URL=$(terraform output -raw invoke_url)
+        API_GATEWAY_URL=$(terraform output -raw base_url)
         echo "=== Unified API Deployment Complete ==="
         echo "🔗 API Gateway URL: $API_GATEWAY_URL"
         echo ""
@@ -156,7 +156,7 @@ jobs:
     - name: Test API Endpoints
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
-        API_GATEWAY_URL=$(terraform output -raw invoke_url)
+        API_GATEWAY_URL=$(terraform output -raw base_url)
         echo "Testing API Gateway endpoints..."
 
         # Test Lambda endpoint (should work immediately)
